@@ -73,6 +73,7 @@ export AbstractGraph,
 
     get_vra_score,
     get_vra_scores,
+    build_get_split_coi_count,
 
     # cluster graph
     cluster_base_graph
@@ -102,5 +103,10 @@ include("./parallel_tempering.jl")
 include("./vap_frac.jl")
 # include("./parallel_tempering_multiprocessing.jl")
 include("./tree.jl")
+
+# include("./partisan_votes.jl")
+# include("./efficiencygap.jl")
+# include("./mean_median.jl")
+include("./coi_splits.jl")
 
 end # module
