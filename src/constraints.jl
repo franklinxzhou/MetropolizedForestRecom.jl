@@ -85,6 +85,21 @@ function AllowedExcessDistsInCoarseNodes(
 end
 
 """"""
+
+function MaxTotalExcessDistsInCoarseNodes(
+    graph::MultiLevelGraph,
+    num_dists::Int,
+    max_total_excess::Int=0;
+    ideal_pop::Real = 0,
+)::MaxTotalExcessDistsInCoarseNodes
+    if ideal_pop == 0
+        ideal_pop = graph.graphs_by_level[1].total_pop / num_dists
+    end
+
+    return MaxTotalExcessDistsInCoarseNodes(max_total_excess, ideal_pop)
+end
+
+""""""
 function MaxHammingDistance(
     graph::MultiLevelGraph,
     partition::MultiLevelPartition, #initial partition
@@ -354,6 +369,75 @@ function satisfies_constraint(
                 # @show "here2", node, node_pop, ideal_pop, dists, excess, needed_dists
                 return false
             end
+        end
+    end
+
+    return true
+end
+
+""""""
+
+function satisfies_constraint(
+    constraint::MaxTotalExcessDistsInCoarseNodes,
+    graph::MultiLevelGraph,
+    district_to_nodes::AbstractArray{Dict{Tuple{Vararg{String}},Any}, 1},
+    num_dists::Int,
+)::Bool
+    coarse_graph = graph.graphs_by_level[1]
+    districts_in_node = zeros(coarse_graph.num_nodes)
+
+    for node_set in district_to_nodes
+        for node in keys(node_set)
+            node_id = graph.partition_to_ids[1][node]
+            districts_in_node[node_id] += 1
+        end
+    end
+
+    pop_col = coarse_graph.pop_col
+    node_attributes = coarse_graph.node_attributes
+    ideal_pop = constraint.ideal_pop
+
+    if num_dists > length(district_to_nodes)
+        claimed_pop = zeros(coarse_graph.num_nodes)
+
+        for node_set in district_to_nodes
+            for (node, sub_node_set) in node_set
+                node_id = graph.partition_to_ids[1][node]
+
+                if sub_node_set == nothing
+                    sns = Dict{Tuple{Vararg{String}}, Any}(node => nothing)
+                else
+                    sns = sub_node_set
+                end
+
+                lvl_ns = length(collect(keys(sns))[1])
+                node_pop_in_dist = sum_node_data(graph, sns, pop_col, lvl_ns)
+                claimed_pop[node_id] += node_pop_in_dist
+            end
+        end
+
+        for node_id = 1:coarse_graph.num_nodes
+            pop_tot = node_attributes[node_id][pop_col]
+            unclaimed_pop = pop_tot - claimed_pop[node_id]
+            districts_in_node[node_id] += ceil(unclaimed_pop / ideal_pop)
+        end
+    end
+
+    total_excess = 0
+
+    for node_id = 1:coarse_graph.num_nodes
+        node_pop = node_attributes[node_id][pop_col]
+        dists = districts_in_node[node_id]
+
+        if node_pop < ideal_pop
+            total_excess += max(0, dists - 2)
+        else
+            needed_dists = ceil(node_pop / ideal_pop)
+            total_excess += max(0, dists - needed_dists)
+        end
+
+        if total_excess > constraint.max_total_excess
+            return false
         end
     end
 
