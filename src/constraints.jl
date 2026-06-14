@@ -546,6 +546,13 @@ function satisfies_constraints(
         satisfies_constraints = satisfies_constraints && s
     end
 
+    if satisfies_constraints && haskey(constraints, MaxTotalExcessDistsInCoarseNodes)
+        constraint = constraints[MaxTotalExcessDistsInCoarseNodes]
+        s = satisfies_constraint(constraint, graph, district_to_nodes,
+                                 num_dists)
+        satisfies_constraints = satisfies_constraints && s
+    end
+
     if satisfies_constraints &&
        haskey(constraints, MaxHammingDistance)
         constraint = constraints[MaxHammingDistance]
@@ -596,6 +603,14 @@ function satisfies_constraints(
 
     if haskey(constraints, AllowedExcessDistsInCoarseNodes)
         constraint = constraints[AllowedExcessDistsInCoarseNodes]
+        if !satisfies_constraint(constraint, graph, district_to_nodes,
+                                 num_dists)
+            return false
+        end
+    end
+
+    if haskey(constraints, MaxTotalExcessDistsInCoarseNodes)
+        constraint = constraints[MaxTotalExcessDistsInCoarseNodes]
         if !satisfies_constraint(constraint, graph, district_to_nodes,
                                  num_dists)
             return false
