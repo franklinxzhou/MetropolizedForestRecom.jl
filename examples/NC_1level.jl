@@ -17,9 +17,9 @@ using MetropolizedForestRecom
 
 num_dists = 14
 rng_seed = 110934571
-steps = 1000
+steps = 10000
 pop_dev = 0.02
-gamma = 0.0 #0 is uniform on forests; 1 is uniform on partitions
+gamma = 0.1 #0 is uniform on forests; 1 is uniform on partitions
 
 edge_weights= "connections"
 
@@ -40,7 +40,7 @@ end
 
 # now that the field "county_and_prec_id" is set, we can use it to create the 
 # graph object that we will sample on
-graph = Graph(base_graph, "county_and_prec_id");
+graph = MultiLevelGraph(base_graph, ["county_and_prec_id"]);
 
 constraints = initialize_constraints()
 add_constraint!(constraints, PopulationConstraint(graph, num_dists, pop_dev))
@@ -51,9 +51,9 @@ rng = PCG.PCGStateOneseq(UInt64, rng_seed)
 partition = Partition(graph, constraints, num_dists; rng=rng);
 
 proposal = build_forest_recom2(constraints)
-measure = Measure(0.0, 1.0) # spanning forest measure; first number is exponent on trees, second on linking edges
+measure = Measure(0.1, 1.0) # spanning forest measure; first number is exponent on trees, second on linking edges
 # to add elements to the measure
-# push_measure!(measure, get_isoperimetric_score, 0.45)
+push_measure!(measure, get_isoperimetric_score, 0.02)
 
 output_file_path = joinpath("output", "NC", 
                             "atlas_1level_gamma"*string(gamma)*".jsonl.gz")
@@ -63,5 +63,5 @@ push_writer!(writer, get_log_spanning_forests)
 push_writer!(writer, get_isoperimetric_scores)
 
 println("startring mcmc")
-run_metropolis_hastings!(partition, proposal, measure, steps, rng,
-                         writer=writer, output_freq=1);
+@btime run_metropolis_hastings!(partition, proposal, measure, steps, rng,
+                         writer=writer, output_freq=10);

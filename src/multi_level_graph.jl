@@ -624,8 +624,7 @@ function MultiLevelGraph(
         graphs_by_level
     )
 end
-"""
-"""
+""""""
 function MultiLevelGraph(
     filepath::AbstractString,
     pop_col::AbstractString,
@@ -657,6 +656,37 @@ function MultiLevelGraph(
                     adjacency=adjacency)
     return MultiLevelGraph(base_graph, levels)
 end
+""""""
+function MultiLevelGraph(
+    filepath::AbstractString,
+    pop_col::AbstractString,
+    levels::Union{String, Vector{String}},
+    inc_node_data::Set{String};
+    edge_weights::String="connections",
+    bpop_col=nothing,
+    vap_col=nothing,
+    bvap_col=nothing,
+    area_col=nothing,
+    node_border_col=nothing,
+    edge_perimeter_col=nothing,
+    oriented_nbrs_col=nothing,
+    mcd_col=nothing,
+    adjacency::String="rook"
+)
+    return MultiLevelGraph(filepath, pop_col, levels,
+                           inc_node_data = inc_node_data,
+                           edge_weights=edge_weights,
+                           bpop_col=bpop_col,
+                           vap_col=vap_col,
+                           bvap_col=bvap_col,
+                           area_col=area_col,
+                           node_border_col=node_border_col,
+                           edge_perimeter_col=edge_perimeter_col,
+                           oriented_nbrs_col=oriented_nbrs_col,
+                           mcd_col=mcd_col,
+                           adjacency=adjacency)
+end
+
 """
 compute total connection from edge_weights
 """

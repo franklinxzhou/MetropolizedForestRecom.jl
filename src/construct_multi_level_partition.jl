@@ -51,8 +51,19 @@ function attemptConstructPartition(
             rem_avg_pop_dev = round(100*(node_sets_w_pops[2][2]/rem_dists-ideal_pop)/(ideal_pop), digits = 3)
             
             cur_districts = view(district_to_nodes, 1:tot_dists)
-            if !satisfies_constraints(graph, cur_districts, num_dists,
-                                      constraints)
+            if !satisfies_constraints(graph, cur_districts, num_dists, constraints)
+                
+                # A candidate district was pushed before this constraint check.
+                # Roll it back before trying another candidate.
+                pop!(district_to_nodes)
+
+                # On the final construction step, both remaining pieces were pushed:
+                # one for district num_dists-1 and one for district num_dists.
+                # Roll back the second pushed piece as well.
+                if district == num_dists - 1
+                    pop!(district_to_nodes)
+                end
+
                 continue
             elseif district < num_dists-1
                 remaining_nodes = remaining_nodes_tmp
