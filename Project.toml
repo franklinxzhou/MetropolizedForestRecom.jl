@@ -1,6 +1,6 @@
 name = "MetropolizedForestRecom"
 uuid = "f1e60ccc-08a2-41db-b5d4-22e81ab96e15"
-version = "0.1.2"
+version = "0.1.4"
 authors = ["Gregory Herschlag <gjh@math.duke.edu> and contributors"]
 
 [deps]
