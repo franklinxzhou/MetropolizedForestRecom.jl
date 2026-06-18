@@ -623,6 +623,7 @@ function get_probability_of_edge(
 end
 
 """"""
+# Uniformly sample a cuttable edge; see choose_cuttable_edge() for general case
 function choose_random_cuttable_edge(
     cuttable_edges::Set,
     multiscale_cuttable_tree::MultiScaleCuttableTree,
@@ -633,6 +634,63 @@ function choose_random_cuttable_edge(
     end
     rnd_ind = Int(ceil(rand(rng)*length(cuttable_edges)))
     return collect(cuttable_edges)[rnd_ind], 1.0/length(cuttable_edges)
+end
+
+""""""
+# Dispatcher; ensure calls to the older version are properly handled
+function choose_cuttable_edge(
+    cuttable_edges::Set,
+    multiscale_cuttable_tree::MultiScaleCuttableTree,
+    rng::AbstractRNG,
+    initializer::UniformInitializer,
+)
+    return choose_random_cuttable_edge(
+        cuttable_edges,
+        multiscale_cuttable_tree,
+        rng,
+    )
+end
+
+""""""
+
+function choose_cuttable_edge(
+    cuttable_edges::Set,
+    multiscale_cuttable_tree::MultiScaleCuttableTree,
+    rng::AbstractRNG,
+    initializer::BoundaryWeightedInitializer,
+)
+    if length(cuttable_edges) == 0
+        return nothing, nothing
+    end
+
+    edges_vec = collect(cuttable_edges)
+    weights = [
+        initialization_cut_weight(edge, initializer)
+        for edge in edges_vec
+    ]
+
+    total_weight = sum(weights)
+
+    if total_weight <= 0
+        return choose_random_cuttable_edge(
+            cuttable_edges,
+            multiscale_cuttable_tree,
+            rng,
+        )
+    end
+
+    choice = rand(rng) * total_weight
+    cumulative = 0.0
+
+    for (edge, weight) in zip(edges_vec, weights)
+        cumulative += weight
+        if cumulative >= choice
+            return edge, weight / total_weight
+        end
+    end
+
+    edge = edges_vec[end]
+    return edge, weights[end] / total_weight
 end
 
 """"""
@@ -778,12 +836,20 @@ end
 function cut_edge(
     multiscale_cuttable_tree::MultiScaleCuttableTree,
     subgraph::MultiLevelSubGraph,
+    initializer::AbstractInitializer = UniformInitializer(),
     rng::AbstractRNG
 )
+
     cuttable_edges = Set{Tuple}()
     get_all_cuttable_edges!(cuttable_edges, multiscale_cuttable_tree)
-    edge, prob_edge = choose_random_cuttable_edge(cuttable_edges,
-                                                  multiscale_cuttable_tree, rng)
+
+    edge, prob_edge = choose_cuttable_edge(
+        cuttable_edges,
+        multiscale_cuttable_tree,
+        rng,
+        initializer,
+    )
+    
     if edge === nothing
         return [], edge, nothing
     end
