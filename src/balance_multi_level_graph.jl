@@ -619,25 +619,26 @@ function get_probability_of_edge(
     cuttable_edges::Set{Tuple},
     # linking_edge::Set{Tuple}
 )
-    return 1.0/length(cuttable_edges)
+    return 1.0 / length(cuttable_edges)
 end
 
 """"""
-# Uniformly sample a cuttable edge; see choose_cuttable_edge() for general case
 function choose_random_cuttable_edge(
     cuttable_edges::Set,
     multiscale_cuttable_tree::MultiScaleCuttableTree,
-    rng::AbstractRNG
+    rng::AbstractRNG,
 )
-    if length(cuttable_edges)==0
+    if length(cuttable_edges) == 0
         return nothing, nothing
     end
-    rnd_ind = Int(ceil(rand(rng)*length(cuttable_edges)))
-    return collect(cuttable_edges)[rnd_ind], 1.0/length(cuttable_edges)
+
+    edges_vec = collect(cuttable_edges)
+    rnd_ind = rand(rng, 1:length(edges_vec))
+
+    return edges_vec[rnd_ind], 1.0 / length(edges_vec)
 end
 
 """"""
-# Dispatcher; ensure calls to the older version are properly handled
 function choose_cuttable_edge(
     cuttable_edges::Set,
     multiscale_cuttable_tree::MultiScaleCuttableTree,
@@ -652,7 +653,6 @@ function choose_cuttable_edge(
 end
 
 """"""
-
 function choose_cuttable_edge(
     cuttable_edges::Set,
     multiscale_cuttable_tree::MultiScaleCuttableTree,
@@ -689,6 +689,7 @@ function choose_cuttable_edge(
         end
     end
 
+    # Numerical fallback in case floating-point roundoff misses above.
     edge = edges_vec[end]
     return edge, weights[end] / total_weight
 end
@@ -836,10 +837,9 @@ end
 function cut_edge(
     multiscale_cuttable_tree::MultiScaleCuttableTree,
     subgraph::MultiLevelSubGraph,
+    rng::AbstractRNG;
     initializer::AbstractInitializer = UniformInitializer(),
-    rng::AbstractRNG
 )
-
     cuttable_edges = Set{Tuple}()
     get_all_cuttable_edges!(cuttable_edges, multiscale_cuttable_tree)
 
@@ -849,12 +849,17 @@ function cut_edge(
         rng,
         initializer,
     )
-    
+
     if edge === nothing
         return [], edge, nothing
     end
-    node_sets_w_pops = get_cut_node_sets_w_pop(edge, multiscale_cuttable_tree,
-                                               subgraph)
+
+    node_sets_w_pops = get_cut_node_sets_w_pop(
+        edge,
+        multiscale_cuttable_tree,
+        subgraph,
+    )
+
     return node_sets_w_pops, edge, prob_edge
 end
 
